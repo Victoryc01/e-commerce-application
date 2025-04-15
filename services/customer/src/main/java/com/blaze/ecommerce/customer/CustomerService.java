@@ -29,6 +29,7 @@ public class CustomerService {
         mergeCustomer(customer,request);
     }
 
+    //make sure we dont over ride existing value with null value
     private void mergeCustomer(Customer customer, CustomerRequest request) {
         if (StringUtils.isNotBlank(request.firstname())) {
             customer.setFirstname(request.firstname());
@@ -46,5 +47,20 @@ public class CustomerService {
                 .stream()
                 .map(mapper::fromCustomer)
                 .collect(Collectors.toList());
+    }
+
+    public Boolean existsById(String customerId) {
+        return repository.findById(customerId)
+                .isPresent();
+    }
+
+    public CustomerResponse findById(String customerId) {
+        return repository.findById(customerId)
+                .map(mapper::fromCustomer)
+                .orElseThrow(()-> new CustomerNotFoundException(format("No customer found with the provided ID: %s", customerId)));
+    }
+
+    public void deleteCustomer(String customerId) {
+        repository.deleteById(customerId);
     }
 }
