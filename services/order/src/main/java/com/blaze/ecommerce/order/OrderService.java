@@ -6,6 +6,8 @@ import com.blaze.ecommerce.kafka.OrderConfirmation;
 import com.blaze.ecommerce.kafka.OrderProducer;
 import com.blaze.ecommerce.orderline.OrderLineRequest;
 import com.blaze.ecommerce.orderline.OrderLineService;
+import com.blaze.ecommerce.payment.PaymentClient;
+import com.blaze.ecommerce.payment.PaymentRequest;
 import com.blaze.ecommerce.product.ProductClient;
 import com.blaze.ecommerce.product.PurchaseRequest;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +27,7 @@ public class OrderService {
     private final OrderMapper mapper;
     private final OrderLineService orderLineService;
     private final OrderProducer orderProducer;
+    private final PaymentClient paymentClient;
 
     public Integer createOrder(OrderRequest request) {
         //check the customer using openFeign
@@ -49,10 +52,18 @@ public class OrderService {
             );
         }
 
-        // todo start payment process
+        //start payment process
+        var paymentRequest = new PaymentRequest(
+                request.amount(),
+                request.paymentMethod(),
+                order.getId(),
+                order.getReference(),
+                customer
+        );
+        paymentClient.requestOrderPayment(paymentRequest);
 
 
-        //send the order confirmation to notication micro s(kafka)
+        //send the order confirmation to notification micro s(kafka)
         orderProducer.sendOrderConfirmation(
                 new OrderConfirmation(
                         request.reference(),
